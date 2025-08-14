@@ -1,72 +1,62 @@
-let imagedata =   await imagetodata("./vite.svg");
+
+let imagedata =   await imagetodata("https://threejs.org/examples/textures/uv_grid_opengl.jpg");
 console.log(imagedata,"functionimagaa")
 converttoimge(imagedata)
- function converttoimge(passfunc) {
-  let {data } = passfunc;
-
-  const newCanvas = document.createElement('canvas');
-newCanvas.width = 40;
-newCanvas.height =40;
-
-const newCtx = newCanvas.getContext('2d');
-newCtx.putImageData(data, 0, 0); // Draws the image data back
-// Get base64 PNG
-const dataURL = newCanvas.toDataURL('image/png');
-console.log(dataURL, "dataURL");
-// // Create an image element from it
-const img = new Image();
-img.style.width = '400px';
-img.style.height = '400px';
-img.style.position = 'absolute';
-img.style.objectFit = 'contain';
-img.style.top = '0';
-img.style.left = '0';
-img.src = dataURL; // Set the source to the base64 string
-img.className="imageclass"
-document.body.appendChild(img); // Display it in the page
-
-}
- async function imagetodata(imagepath){
-  const img = new Image();
+async function imagetodata(imagepath) {
+    const img = new Image();
     img.crossOrigin = "Anonymous";
     img.src = imagepath;
-    const canvas = document.createElement("canvas");
-    const canvasSizeW = img.naturalWidth ||40 ;
-    const canvasSizeH = img.naturalHeight ||40;
-    canvas.width = canvasSizeW;
-    canvas.height = canvasSizeH;
-    const ctx = canvas.getContext("2d");
-    
-let imagepadata={
-  width:canvasSizeW,
-  canvas,
-  height:canvasSizeH,data:null
-}
-
-  let pro=new Promise((resolve, reject) => {
-
-  img.onload = () => {
-    ctx.drawImage(img, 0, 0);
   
-    // Retrieve image data
-    const imgd = ctx.getImageData(0, 0, canvasSizeW, canvasSizeH);
-console.log(imgd.data, "imgd.data");
-    imagepadata.data=imgd;
+    return new Promise((resolve, reject) => {
+      img.onload = () => {
+        // Now we have real image dimensions
+        const canvas = document.createElement("canvas");
+        const canvasSizeW = img.naturalWidth;
+        const canvasSizeH = img.naturalHeight;
+        canvas.width = canvasSizeW;
+        canvas.height = canvasSizeH;
+  
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, canvasSizeW, canvasSizeH);
+  
+        const imgd = ctx.getImageData(0, 0, canvasSizeW, canvasSizeH);
+  
+        resolve({
+          width: canvasSizeW,
+          height: canvasSizeH,
+          data: imgd
+        });
+      };
+  
+      img.onerror = reject;
+    });
+  }
+  
+  function converttoimge(passfunc) {
+    const { data, width, height } = passfunc;
+  
+    // Create preview canvas
+    const previewCanvas = document.createElement("canvas");
+    previewCanvas.width = 400;
+    previewCanvas.height = 400;
+    const ctx = previewCanvas.getContext("2d");
+  
+    // Offscreen canvas with original data
+    const tempCanvas = document.createElement("canvas");
 
-    resolve(imagepadata)
-    // Convert to PNG base64
-    
-  };
-
-
-})
-
-console.log( await pro, "pro")
-
-
-    return await pro;
-
-    
-
-
-}
+    tempCanvas.getContext("2d").putImageData(data, 0, 0);
+  
+    // Draw scaled into preview
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(tempCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+  
+    // Export to <img>
+    const img = new Image();
+    img.src = previewCanvas.toDataURL("image/png");
+    img.style.position = "absolute";
+    img.style.top = "0";
+  img.className = "imageclass";
+    img.style.left = "0";
+    document.body.appendChild(img);
+  }
